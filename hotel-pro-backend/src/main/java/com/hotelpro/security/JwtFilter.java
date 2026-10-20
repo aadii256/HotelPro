@@ -76,6 +76,15 @@ public class JwtFilter extends OncePerRequestFilter {
             }
         } catch (JwtException | IllegalArgumentException exception) {
             SecurityContextHolder.clearContext();
+            @Override
+protected boolean shouldNotFilter(HttpServletRequest request) {
+    String path = request.getServletPath();
+
+    return path.equals("/api/auth/register")
+            || path.equals("/api/auth/login")
+            || path.equals("/api/health")
+            || request.getMethod().equals("OPTIONS");
+}
         }
 
         filterChain.doFilter(request, response);
