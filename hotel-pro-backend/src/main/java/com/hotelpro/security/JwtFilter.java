@@ -29,6 +29,16 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getServletPath();
+
+        return path.equals("/api/auth/register")
+                || path.equals("/api/auth/login")
+                || path.equals("/api/health")
+                || request.getMethod().equals("OPTIONS");
+    }
+
+    @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
@@ -47,8 +57,9 @@ public class JwtFilter extends OncePerRequestFilter {
         try {
             String email = jwtService.extractUsername(token);
 
-            if (email != null &&
-                    SecurityContextHolder.getContext().getAuthentication() == null) {
+            if (email != null
+                    && SecurityContextHolder.getContext()
+                            .getAuthentication() == null) {
 
                 var optionalUser = userRepository.findByEmail(email);
 
@@ -63,11 +74,15 @@ public class JwtFilter extends OncePerRequestFilter {
                     if (jwtService.isTokenValid(token, userDetails)) {
                         UsernamePasswordAuthenticationToken authentication =
                                 new UsernamePasswordAuthenticationToken(
-                                        userDetails, null, userDetails.getAuthorities());
+                                        userDetails,
+                                        null,
+                                        userDetails.getAuthorities()
+                                );
 
                         authentication.setDetails(
                                 new WebAuthenticationDetailsSource()
-                                        .buildDetails(request));
+                                        .buildDetails(request)
+                        );
 
                         SecurityContextHolder.getContext()
                                 .setAuthentication(authentication);
@@ -76,15 +91,6 @@ public class JwtFilter extends OncePerRequestFilter {
             }
         } catch (JwtException | IllegalArgumentException exception) {
             SecurityContextHolder.clearContext();
-            @Override
-protected boolean shouldNotFilter(HttpServletRequest request) {
-    String path = request.getServletPath();
-
-    return path.equals("/api/auth/register")
-            || path.equals("/api/auth/login")
-            || path.equals("/api/health")
-            || request.getMethod().equals("OPTIONS");
-}
         }
 
         filterChain.doFilter(request, response);
